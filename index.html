@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#5a5bc9" />
+    <meta
+      name="description"
+      content="24개 질문으로 알아보는 나의 덕질 유형! 16가지 유형 중 나는 어떤 타입일까요?"
+    />
+    <title>애니 덕질 성향 테스트</title>
+    <link rel="canonical" href="https://yuyeon-a.github.io/anime-fandom-test/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="애니 덕질 성향 테스트" />
+    <meta property="og:description" content="24개 질문으로 알아보는 나의 덕질 유형! 16가지 유형 중 나는 어떤 타입일까요?" />
+    <meta property="og:url" content="https://yuyeon-a.github.io/anime-fandom-test/" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:image" content="https://yuyeon-a.github.io/anime-fandom-test/assets/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="애니 덕질 성향 테스트" />
+    <meta name="twitter:description" content="24개 질문으로 알아보는 나의 덕질 유형! 16가지 유형 중 나는 어떤 타입일까요?" />
+    <meta name="twitter:image" content="https://yuyeon-a.github.io/anime-fandom-test/assets/og.png" />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/style.css" />
+    <style>
+      :root {
+        --indigo: #5a5bc9;
+        --indigo-deep: #1f2350;
+        --lavender: #f2efff;
+        --white: #ffffff;
+        --navy: #1f2350;
+        --text: #20263f;
+        --border: rgba(90, 91, 201, 0.16);
+        --error: #d64f68;
+        --success: #2e9d7d;
+      }
+      .survey-screen,
+      .thank-you-screen {
+        max-width: 640px;
+        margin: 0 auto;
+        width: min(92vw, 640px);
+      }
+      .survey-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .text-link {
+        background: none;
+        border: none;
+        color: var(--indigo);
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0;
+      }
+      .survey-panel,
+      .thank-you-panel {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        box-shadow: 0 18px 48px rgba(90, 91, 201, 0.08);
+        padding: 24px 18px;
+      }
+      .survey-title {
+        margin: 0;
+        color: var(--navy);
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+      }
+      .survey-subtitle {
+        margin: 6px 0 20px;
+        color: rgba(31, 35, 80, 0.7);
+        line-height: 1.6;
+      }
+      .survey-field {
+        margin-bottom: 20px;
+      }
+      .survey-field > label,
+      .survey-field legend {
+        display: block;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 10px;
+      }
+      .required-mark {
+        color: var(--error);
+        margin-left: 6px;
+      }
+      .rating-row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .rating-btn {
+        appearance: none;
+        border: 2px solid rgba(90, 91, 201, 0.2);
+        background: var(--white);
+        color: var(--navy);
+        border-radius: 16px;
+        padding: 12px 8px 10px;
+        min-height: 72px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        transition: 0.15s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        text-align: center;
+      }
+      .rating-btn .score {
+        font-size: 1.05rem;
+      }
+      .rating-btn .score-label {
+        font-size: 0.72rem;
+        line-height: 1.35;
+        font-weight: 700;
+      }
+      .rating-btn.selected {
+        background: rgba(90, 91, 201, 0.08);
+        border-color: var(--indigo);
+        box-shadow: inset 0 0 0 1px var(--indigo);
+      }
+      .rating-btn:focus-visible,
+      .survey-radio:focus-visible,
+      .survey-textarea:focus-visible,
+      .survey-form button:focus-visible,
+      .survey-link:focus-visible {
+        outline: 3px solid rgba(90, 91, 201, 0.28);
+        outline-offset: 2px;
+      }
+      .survey-readout {
+        margin-top: 8px;
+        color: var(--indigo);
+        font-weight: 700;
+        min-height: 1.5em;
+      }
+      .survey-radio-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .survey-radio-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: #faf9ff;
+        cursor: pointer;
+      }
+      .survey-radio-item input {
+        accent-color: var(--indigo);
+        width: 18px;
+        height: 18px;
+      }
+      .survey-textarea {
+        width: 100%;
+        min-height: 128px;
+        border: 1px solid rgba(90, 91, 201, 0.24);
+        border-radius: 16px;
+        padding: 12px 14px;
+        font: inherit;
+        resize: vertical;
+        background: #fff;
+      }
+      .counter {
+        text-align: right;
+        color: rgba(31, 35, 80, 0.68);
+        font-size: 0.82rem;
+        margin-top: 8px;
+      }
+      .form-error {
+        margin-top: 8px;
+        color: var(--error);
+        font-size: 0.82rem;
+        font-weight: 700;
+        display: none;
+      }
+      .survey-field.has-error .form-error {
+        display: block;
+      }
+      .survey-field.has-error .rating-btn,
+      .survey-field.has-error .survey-radio-item,
+      .survey-field.has-error .survey-textarea {
+        border-color: rgba(214, 79, 104, 0.8);
+      }
+      .survey-form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 22px;
+      }
+      .survey-submit,
+      .survey-copy,
+      .thank-you-btn {
+        border: none;
+        color: var(--white);
+        background: linear-gradient(135deg, #6d79e6, #5a5bc9);
+        min-height: 52px;
+        border-radius: 999px;
+        font-weight: 800;
+        cursor: pointer;
+        font: inherit;
+      }
+      .survey-copy,
+      .thank-you-btn.secondary {
+        background: #efeefe;
+        color: var(--navy);
+      }
+      .survey-form-note {
+        color: rgba(31, 35, 80, 0.72);
+        font-size: 0.84rem;
+        line-height: 1.5;
+        margin-top: 10px;
+      }
+      .survey-status {
+        min-height: 24px;
+        margin-top: 10px;
+        color: var(--indigo);
+        font-weight: 700;
+      }
+      .thank-you-panel {
+        text-align: center;
+      }
+      .thank-you-message {
+        margin: 12px 0 18px;
+        font-size: clamp(2rem, 7vw, 2.8rem);
+        color: var(--navy);
+      }
+      .thank-you-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 22px;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+      @media (max-width: 560px) {
+        .rating-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <main class="page">
+        <section id="intro" class="screen">
+          <div class="intro-shell">
+            <div class="hero-layout panel hero-panel">
+              <div class="hero-copy">
+                <p class="eyebrow">당신의 덕질 방식, 지금 확인해볼까요?</p>
+                <h1>애니 덕질<br />성향 테스트</h1>
+                <p class="lead">
+                  나의 애니 감상 습관부터 최애를 향한 애정, 새로운 취향을 발견하는 방식까지.
+                  24개의 질문으로 나만의 덕질 유형을 알아보세요!
+                </p>
+                <button id="start-btn" class="btn primary" type="button">
+                  내 덕질 유형 알아보기 →
+                </button>
+                <div class="meta-row" aria-label="테스트 정보">
+                  <span>총 24문항</span>
+                  <span>약 3~5분</span>
+                  <span>답을 선택해 주세요</span>
+                </div>
+              </div>
+
+              <div class="hero-visual" aria-label="애니 캐릭터 일러스트">
+                <div id="hero-art" class="hero-art"></div>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <div class="section-head">
+                <span class="kicker">What Can I Discover?</span>
+                <h2>나의 덕질 성향, 이렇게 살펴볼 수 있어요</h2>
+              </div>
+
+              <div class="axis-grid">
+                <article class="panel axis-card">
+                  <div class="axis-card-top">
+                    <span class="axis-tag">감상 습관</span>
+                    <span class="axis-code">R / S</span>
+                  </div>
+                  <h3>정주행형 R</h3>
+                  <p>한 번에 몰아보는지, 일상 속에서 꾸준히 감상하는지 알아봐요.</p>
+                </article>
+
+                <article class="panel axis-card">
+                  <div class="axis-card-top">
+                    <span class="axis-tag">작품 선택 기준</span>
+                    <span class="axis-code">C / W</span>
+                  </div>
+                  <h3>캐릭터 우선형 C</h3>
+                  <p>최애와 관계성에 끌리는지, 스토리와 연출의 완성도를 중요하게 보는지 알아봐요.</p>
+                </article>
+
+                <article class="panel axis-card">
+                  <div class="axis-card-top">
+                    <span class="axis-tag">취향 탐색 방식</span>
+                    <span class="axis-code">F / E</span>
+                  </div>
+                  <h3>취향 확신형 F</h3>
+                  <p>좋아하는 장르를 깊게 파는지, 새로운 장르와 작품을 탐험하는지 알아봐요.</p>
+                </article>
+
+                <article class="panel axis-card">
+                  <div class="axis-card-top">
+                    <span class="axis-tag">덕질 표현 방식</span>
+                    <span class="axis-code">P / D</span>
+                  </div>
+                  <h3>개인 향유형 P</h3>
+                  <p>혼자 조용히 즐기는지, 다른 사람과 취향을 나누는지 알아봐요.</p>
+                </article>
+              </div>
+            </div>
+
+            <div class="info-section how-it-works">
+              <div class="section-head">
+                <span class="kicker">How It Works</span>
+                <h2>당신의 덕질 유형을 알아보는 3단계</h2>
+              </div>
+
+              <div class="steps-grid" aria-label="테스트 단계">
+                <div class="panel step-card">
+                  <div class="step-number">01</div>
+                  <b>질문에 답하기</b>
+                  <span>24개의 질문에 평소 애니를 즐기는 모습대로 답해요.</span>
+                </div>
+                <div class="panel step-card">
+                  <div class="step-number">02</div>
+                  <b>나의 성향 분석하기</b>
+                  <span>네 가지 성향을 분석해 16가지 유형 중 가장 가까운 유형을 찾아요.</span>
+                </div>
+                <div class="panel step-card">
+                  <div class="step-number">03</div>
+                  <b>결과 확인하고 공유하기</b>
+                  <span>나만의 성향 카드와 캐릭터를 확인하고 친구들과 덕질 유형을 공유해요.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <div class="section-head">
+                <span class="kicker">4가지 성향</span>
+                <h2>각 성향의 양면을 살펴봐요</h2>
+              </div>
+              <div id="axis-guide" class="axis-guide" aria-label="성향 가이드"></div>
+            </div>
+
+            <div class="preview-block">
+              <div class="section-head">
+                <span class="kicker">16 Types</span>
+                <h2>덕질 유형 캐릭터 컬렉션</h2>
+              </div>
+              <div id="type-preview" class="type-preview" aria-label="유형 미리보기"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="test" class="screen hidden" aria-live="polite">
+          <div class="panel question-panel">
+            <div class="question-meta">
+              <span id="question-counter" class="question-badge">QUESTION 01 / 24</span>
+              <span class="meta-tag">답을 선택해 주세요</span>
+            </div>
+
+            <div class="progress-track" aria-hidden="true">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+
+            <h2 id="question-text" class="question-text" aria-live="polite"></h2>
+            <div id="answer-options" class="answer-options" aria-label="질문 응답 선택" role="radiogroup"></div>
+
+            <div class="nav-row">
+              <button id="prev-btn" class="btn secondary" type="button">이전</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="result" class="screen hidden">
+          <div class="result-header">
+            <p class="eyebrow">당신의 덕질 유형은</p>
+            <h2>나의 애니 덕질 캐릭터</h2>
+          </div>
+
+          <div class="result-layout">
+            <div id="result-card-wrap" class="panel result-card-wrap"></div>
+
+            <div class="panel result-summary-panel">
+              <h2>나의 성향 분석</h2>
+              <div id="axis-breakdown" class="axis-breakdown"></div>
+              <p class="axis-note">
+                ※ 수치는 응답을 바탕으로 한 상대적 성향 점수예요. 두 성향이 같으면 X로 표시해요.
+              </p>
+            </div>
+          </div>
+
+          <div id="result-report" class="result-report" aria-live="polite"></div>
+
+          <div class="panel share-panel">
+            <h2>결과 공유하기</h2>
+            <div class="share-grid">
+              <button type="button" class="btn share-btn" data-share="instagram">인스타그램</button>
+              <button type="button" class="btn share-btn" data-share="x">X(트위터)</button>
+              <button type="button" class="btn share-btn" data-share="kakao">카카오톡</button>
+              <button type="button" class="btn share-btn secondary" data-share="save">이미지 저장</button>
+              <button type="button" class="btn share-btn secondary" data-share="copy">링크 복사</button>
+              <button type="button" class="btn share-btn secondary" data-share="retry">다시 하기</button>
+            </div>
+          </div>
+
+          <div class="result-feedback-row">
+            <button id="survey-trigger-btn" type="button" class="btn primary full-width">결과 평가 설문 남기기</button>
+          </div>
+        </section>
+
+        <section id="survey" class="screen hidden survey-screen" aria-live="polite">
+          <div class="survey-header">
+            <button type="button" id="survey-back-btn" class="text-link">결과로 돌아가기</button>
+          </div>
+          <div class="survey-panel">
+            <h2 class="survey-title">테스트 결과 평가 설문</h2>
+            <p class="survey-subtitle">테스트를 완료하고 자신의 유형 결과를 확인한 뒤 응답해 주세요.</p>
+
+            <form id="feedback-form" class="survey-form" novalidate>
+              <div class="survey-field" data-field="q1_resultMatch">
+                <label for="q1_resultMatch_label">문항 1. 결과 일치도 <span class="required-mark">필수</span></label>
+                <div class="rating-row" id="q1_resultMatch_group" role="radiogroup" aria-label="문항 1. 결과 일치도">
+                  <button type="button" class="rating-btn" data-rating-group="q1_resultMatch" data-value="1" role="radio" aria-checked="false">
+                    <span class="score">1점</span>
+                    <span class="score-label">전혀 그렇지 않다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q1_resultMatch" data-value="2" role="radio" aria-checked="false">
+                    <span class="score">2점</span>
+                    <span class="score-label">그렇지 않다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q1_resultMatch" data-value="3" role="radio" aria-checked="false">
+                    <span class="score">3점</span>
+                    <span class="score-label">보통이다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q1_resultMatch" data-value="4" role="radio" aria-checked="false">
+                    <span class="score">4점</span>
+                    <span class="score-label">그렇다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q1_resultMatch" data-value="5" role="radio" aria-checked="false">
+                    <span class="score">5점</span>
+                    <span class="score-label">매우 그렇다</span>
+                  </button>
+                </div>
+                <div class="survey-readout" id="q1_resultMatch_readout" aria-live="polite">선택: 없음</div>
+                <div class="form-error" id="q1_resultMatch_error" aria-live="polite">이 문항에 답해 주세요.</div>
+              </div>
+
+              <div class="survey-field" data-field="q2_explanationClarity">
+                <label for="q2_explanationClarity_label">문항 2. 설명 이해도 <span class="required-mark">필수</span></label>
+                <div class="rating-row" id="q2_explanationClarity_group" role="radiogroup" aria-label="문항 2. 설명 이해도">
+                  <button type="button" class="rating-btn" data-rating-group="q2_explanationClarity" data-value="1" role="radio" aria-checked="false">
+                    <span class="score">1점</span>
+                    <span class="score-label">전혀 그렇지 않다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q2_explanationClarity" data-value="2" role="radio" aria-checked="false">
+                    <span class="score">2점</span>
+                    <span class="score-label">그렇지 않다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q2_explanationClarity" data-value="3" role="radio" aria-checked="false">
+                    <span class="score">3점</span>
+                    <span class="score-label">보통이다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q2_explanationClarity" data-value="4" role="radio" aria-checked="false">
+                    <span class="score">4점</span>
+                    <span class="score-label">그렇다</span>
+                  </button>
+                  <button type="button" class="rating-btn" data-rating-group="q2_explanationClarity" data-value="5" role="radio" aria-checked="false">
+                    <span class="score">5점</span>
+                    <span class="score-label">매우 그렇다</span>
+                  </button>
+                </div>
+                <div class="survey-readout" id="q2_explanationClarity_readout" aria-live="polite">선택: 없음</div>
+                <div class="form-error" id="q2_explanationClarity_error" aria-live="polite">이 문항에 답해 주세요.</div>
+              </div>
+
+              <fieldset class="survey-field" data-field="q3_bestMatchingAxis">
+                <legend>문항 3. 축별 납득도 <span class="required-mark">필수</span></legend>
+                <div class="survey-radio-list" role="radiogroup" aria-label="문항 3. 축별 납득도">
+                  <label class="survey-radio-item"><input type="radio" name="q3_bestMatchingAxis" value="감상 습관" /> 감상 습관</label>
+                  <label class="survey-radio-item"><input type="radio" name="q3_bestMatchingAxis" value="작품 선택 기준" /> 작품 선택 기준</label>
+                  <label class="survey-radio-item"><input type="radio" name="q3_bestMatchingAxis" value="취향 탐색 방식" /> 취향 탐색 방식</label>
+                  <label class="survey-radio-item"><input type="radio" name="q3_bestMatchingAxis" value="덕질 표현 방식" /> 덕질 표현 방식</label>
+                  <label class="survey-radio-item"><input type="radio" name="q3_bestMatchingAxis" value="모든 축이 비슷하게 잘 맞는다" /> 모든 축이 비슷하게 잘 맞는다</label>
+                  <label class="survey-radio-item"><input type="radio" name="q3_bestMatchingAxis" value="특별히 잘 맞는 축이 없다" /> 특별히 잘 맞는 축이 없다</label>
+                </div>
+                <div class="form-error" id="q3_bestMatchingAxis_error" aria-live="polite">이 문항에 답해 주세요.</div>
+              </fieldset>
+
+              <div class="survey-field" data-field="q4_mismatchReason">
+                <label for="q4_mismatchReason">문항 4. 결과 불일치 이유 <span style="font-weight: 600; color: rgba(31,35,80,0.7);">(선택)</span></label>
+                <textarea id="q4_mismatchReason" class="survey-textarea" name="q4_mismatchReason" maxlength="500" placeholder="결과 중 자신과 맞지 않는 부분이 있다면, 어떤 점이 맞지 않았나요?"></textarea>
+                <div class="counter"><span id="q4_mismatchReason_count">0</span> / 500</div>
+              </div>
+
+              <div class="survey-field" data-field="q5_comments">
+                <label for="q5_comments">문항 5. 추가 의견 및 개선점 <span style="font-weight: 600; color: rgba(31,35,80,0.7);">(선택)</span></label>
+                <textarea id="q5_comments" class="survey-textarea" name="q5_comments" maxlength="500" placeholder="테스트 문항이나 결과 설명에서 이해하기 어렵거나 개선이 필요하다고 느낀 부분이 있나요?"></textarea>
+                <div class="counter"><span id="q5_comments_count">0</span> / 500</div>
+              </div>
+
+              <input type="text" name="website" class="visually-hidden" tabindex="-1" autocomplete="off" />
+
+              <div class="survey-form-actions">
+                <button type="submit" class="survey-submit" id="feedback-submit-btn">응답 제출</button>
+                <button type="button" class="survey-copy" id="feedback-copy-btn" style="display:none;">응답 내용 복사</button>
+              </div>
+
+              <p class="survey-form-note">응답은 익명으로 수집되며, 개인정보는 받지 않아요.</p>
+              <div class="survey-status" id="feedback-status" aria-live="polite"></div>
+            </form>
+          </div>
+        </section>
+
+        <section id="thanks" class="screen hidden thank-you-screen" aria-live="polite">
+          <div class="thank-you-panel">
+            <p class="eyebrow">설문 참여 완료</p>
+            <h2 class="thank-you-message">소중한 의견 감사합니다.</h2>
+            <div class="thank-you-actions">
+              <button type="button" class="thank-you-btn" id="thanks-result-btn">내 결과 다시 보기</button>
+              <button type="button" class="thank-you-btn secondary" id="thanks-home-btn">처음으로</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="./js/data.js"></script>
+    <script src="./js/sprites.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
