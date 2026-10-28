@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>페이지를 찾을 수 없어요</title>
+    <meta name="description" content="요청하신 페이지를 찾을 수 없습니다. 애니 덕질 성향 테스트로 다시 이동해 주세요." />
+    <style>
+      :root {
+        --bg: #f6f4ff;
+        --panel: #fff;
+        --plum: #5a5bc9;
+        --lavender: #d7d4ff;
+        --text: #1d234b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #f7f4ff 0%, #ece8ff 100%);
+        font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+        color: var(--text);
+      }
+      .box {
+        width: min(92vw, 520px);
+        background: rgba(255,255,255,0.9);
+        border: 1px solid rgba(90, 91, 201, 0.15);
+        border-radius: 28px;
+        box-shadow: 0 24px 64px rgba(90, 91, 201, 0.12);
+        padding: 2rem 1.5rem;
+        text-align: center;
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.45rem 0.9rem;
+        border-radius: 999px;
+        background: var(--lavender);
+        color: var(--plum);
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        font-size: 0.74rem;
+      }
+      h1 {
+        margin: 1rem 0 0.5rem;
+        font-size: clamp(2rem, 5vw, 3rem);
+      }
+      p {
+        margin: 0.5rem 0 1.5rem;
+        line-height: 1.7;
+        color: rgba(29, 35, 75, 0.8);
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 0 1.25rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #6d79e6, #5a5bc9);
+        color: white;
+        text-decoration: none;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="box">
+      <span class="badge">404</span>
+      <h1>페이지를 찾을 수 없어요.</h1>
+      <p>요청하신 경로가 잘못되었거나 이동된 페이지일 수 있어요.<br />아래 버튼을 눌러 애니 덕질 성향 테스트로 돌아가 주세요.</p>
+      <a href="https://yuyeon-a.github.io/connection-care/">테스트 홈으로 이동</a>
+    </main>
+  </body>
+</html>
