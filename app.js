@@ -1,4 +1,4 @@
-const SITE_URL = "https://yuyeon-a.github.io/connection-care/";
+const SITE_URL = "https://yuyeona332.github.io/anime-fandom-test/";
 const KAKAO_KEY = "";
 
 const DATA = window.ANIME_TEST_DATA;
@@ -9,7 +9,8 @@ const state = {
   index: 0,
   currentResult: null,
   isFriendView: false,
-  sharedToken: ""
+  sharedToken: "",
+  transitionLocked: false
 };
 
 const RESULT_HASH_RE = /^#r=([RSX][CWX][FEX][PDX])-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})$/;
@@ -227,6 +228,45 @@ function setHeroArt() {
   });
 }
 
+function renderAxisGuide() {
+  const guide = document.getElementById("axis-guide");
+  if (!guide) {
+    return;
+  }
+
+  const guideCodeMap = {
+    "R/S": ["RCFP", "SWED"],
+    "C/W": ["RCFP", "SWED"],
+    "F/E": ["RCFP", "SWED"],
+    "P/D": ["RCFP", "SWED"]
+  };
+
+  const axisRows = DATA.axes.map((axis) => {
+    const [leftCode, rightCode] = guideCodeMap[axis.label] || ["RCFP", "SWED"];
+
+    return `
+      <div class="axis-guide-row">
+        <div class="axis-guide-label">${axis.label}</div>
+        <div class="axis-guide-pairs">
+          <button type="button" class="axis-guide-pill" data-character-code="${leftCode}">
+            <span class="axis-guide-sprite">${buildCharacterSvg(leftCode, 42)}</span>
+            <span>${axis.sideA} ${axis.sideAName}</span>
+          </button>
+          <button type="button" class="axis-guide-pill" data-character-code="${rightCode}">
+            <span class="axis-guide-sprite">${buildCharacterSvg(rightCode, 42)}</span>
+            <span>${axis.sideB} ${axis.sideBName}</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  guide.innerHTML = axisRows;
+  guide.querySelectorAll(".axis-guide-pill").forEach((button) => {
+    button.addEventListener("click", () => openCharacterModal(button.dataset.characterCode));
+  });
+}
+
 function renderTypePreview() {
   const preview = document.getElementById("type-preview");
   if (!preview) {
@@ -235,11 +275,12 @@ function renderTypePreview() {
 
   const buttons = TYPE_CODES.map((code) => {
     const name = getTypeName(code);
+    const label = Array.isArray(name) ? name.join(" ") : name;
     return `
-      <button type="button" class="type-card" data-character-code="${code}" aria-label="${name[0]} ${name[1]} 상세 정보 보기">
-        <div class="type-card-art" aria-hidden="true">${buildCharacterSvg(code, 110)}</div>
-        <span class="label">${name[1]}</span>
-        <span class="sub">${name[0]}</span>
+      <button type="button" class="type-card" data-character-code="${code}" aria-label="${label} 상세 정보 보기">
+        <div class="type-card-art" aria-hidden="true">${buildCharacterSvg(code, 84)}</div>
+        <span class="label">${label}</span>
+        <span class="sub">${code}</span>
       </button>
     `;
   }).join("");
@@ -263,6 +304,11 @@ function typeCodeFromAxisLetters(axisLetters) {
 
 function getTypeName(code) {
   const normalized = String(code || "").toUpperCase();
+
+  if (DATA.typeDisplayNames && DATA.typeDisplayNames[normalized]) {
+    return [DATA.typeDisplayNames[normalized]];
+  }
+
   const adjectivePair = `${normalized[2] || "X"}${normalized[3] || "X"}`;
   const nounPair = `${normalized[0] || "X"}${normalized[1] || "X"}`;
 
@@ -399,6 +445,7 @@ function renderQuestion() {
   const questionCounter = document.getElementById("question-counter");
   if (questionCounter) {
     questionCounter.textContent = `${state.index + 1} / ${total}`;
+    questionCounter.setAttribute("aria-live", "polite");
   }
 
   const progressFill = document.getElementById("progress-fill");
@@ -413,15 +460,7 @@ function renderQuestion() {
 
   const prevBtn = document.getElementById("prev-btn");
   if (prevBtn) {
-    prevBtn.disabled = state.index === 0;
-  }
-
-  const nextBtn = document.getElementById("next-btn");
-  if (nextBtn) {
-    const isAnswered = isQuestionAnswered(question.id);
-    nextBtn.disabled = !isAnswered;
-    nextBtn.textContent = state.index === total - 1 ? "결과 보기" : "다음 →";
-    nextBtn.setAttribute("aria-label", state.index === total - 1 ? "결과 보기" : "다음 질문");
+    prevBtn.disabled = state.index === 0 || state.transitionLocked;
   }
 
   const answerOptions = document.getElementById("answer-options");
@@ -457,15 +496,35 @@ function renderQuestion() {
   const optionButtons = [...answerOptions.querySelectorAll(".answer-option")];
 
   optionButtons.forEach((button) => {
+    const selectedValue = normalizeAnswerValue(button.dataset.value);
+    if (selectedValue === null) {
+      return;
+    }
+
     button.addEventListener("click", () => {
-      const selectedValue = normalizeAnswerValue(button.dataset.value);
-      if (selectedValue === null) {
+      if (state.transitionLocked) {
+        return;
+      }
+
+      const nextValue = normalizeAnswerValue(button.dataset.value);
+      if (nextValue === null) {
         showToast("답을 선택해 주세요.");
         return;
       }
 
-      state.answers[question.id] = selectedValue;
-      renderQuestion();
+      state.answers[question.id] = nextValue;
+      state.transitionLocked = true;
+      setTimeout(() => {
+        if (state.index < DATA.questions.length - 1) {
+          state.index += 1;
+          state.transitionLocked = false;
+          renderQuestion();
+          return;
+        }
+
+        state.transitionLocked = false;
+        buildResult();
+      }, 200);
     });
 
     button.addEventListener("keydown", (event) => {
@@ -475,19 +534,36 @@ function renderQuestion() {
       }
 
       event.preventDefault();
+      if (state.transitionLocked) {
+        return;
+      }
+
       const currentIndex = optionButtons.indexOf(button);
       let targetIndex = currentIndex;
-
       if (key === "ArrowRight" || key === "ArrowDown") {
         targetIndex = Math.min(optionButtons.length - 1, currentIndex + 1);
       } else if (key === "ArrowLeft" || key === "ArrowUp") {
         targetIndex = Math.max(0, currentIndex - 1);
-      } else if (key === " " || key === "Enter") {
-        const selectedValue = normalizeAnswerValue(button.dataset.value);
-        if (selectedValue !== null) {
-          state.answers[question.id] = selectedValue;
-          renderQuestion();
+      }
+
+      if (key === " " || key === "Enter") {
+        const chosen = normalizeAnswerValue(button.dataset.value);
+        if (chosen === null) {
+          return;
         }
+        state.answers[question.id] = chosen;
+        state.transitionLocked = true;
+        setTimeout(() => {
+          if (state.index < DATA.questions.length - 1) {
+            state.index += 1;
+          }
+          state.transitionLocked = false;
+          if (state.index >= DATA.questions.length - 1 && isQuestionAnswered(question.id)) {
+            buildResult();
+            return;
+          }
+          renderQuestion();
+        }, 200);
         return;
       }
 
@@ -496,45 +572,34 @@ function renderQuestion() {
         return;
       }
 
-      const selectedValue = normalizeAnswerValue(targetButton.dataset.value);
-      if (selectedValue === null) {
+      const targetValue = normalizeAnswerValue(targetButton.dataset.value);
+      if (targetValue === null) {
         return;
       }
-
-      state.answers[question.id] = selectedValue;
-      renderQuestion();
+      state.answers[question.id] = targetValue;
+      state.transitionLocked = true;
       setTimeout(() => {
-        const focusTarget = answerOptions.querySelector(`.answer-option[data-value="${selectedValue}"]`);
-        if (focusTarget) {
-          focusTarget.focus();
+        state.transitionLocked = false;
+        if (state.index < DATA.questions.length - 1) {
+          state.index += 1;
+          renderQuestion();
+          return;
         }
-      }, 0);
+        buildResult();
+      }, 180);
     });
   });
 }
 
-function nextQuestion() {
-  const question = getCurrentQuestion();
-  if (!question) {
+function prevQuestion() {
+  if (state.transitionLocked) {
     return;
   }
 
-  if (!isQuestionAnswered(question.id)) {
-    showToast("답을 선택해 주세요.");
-    const firstOption = document.querySelector(".answer-option");
-    if (firstOption) {
-      firstOption.focus();
-    }
-    return;
-  }
-
-  if (state.index < DATA.questions.length - 1) {
-    state.index += 1;
+  if (state.index > 0) {
+    state.index -= 1;
     renderQuestion();
-    return;
   }
-
-  buildResult();
 }
 
 function startTest() {
@@ -579,153 +644,19 @@ function renderAxisBreakdown() {
 }
 
 function buildCharacterSvg(code, size = 220) {
-  const normalized = Array.isArray(code) ? code.join("").toUpperCase() : String(code || "RCFP").toUpperCase();
+  if (typeof window !== "undefined" && window.ANIME_PIXEL_SPRITES && typeof window.ANIME_PIXEL_SPRITES.buildSpriteSvg === "function") {
+    return window.ANIME_PIXEL_SPRITES.buildSpriteSvg(code, size);
+  }
 
-  const mascotMap = {
-    RCFP: { animal: "cat", palette: ["#fbe7f0", "#ffc9dc", "#fff1d9", "#f9a9c6", "#7b6bd6"], accessory: "bow", expression: "spark", outline: "#604f7d" },
-    RCFD: { animal: "rabbit", palette: ["#f7eaff", "#dcd5ff", "#ffe9c8", "#b6a8ff", "#7d76ea"], accessory: "heart", expression: "happy", outline: "#5b4ea0" },
-    RCEP: { animal: "bear", palette: ["#fde2c0", "#f7b578", "#fff8ec", "#f4d6a4", "#d57d5e"], accessory: "star", expression: "sleepy", outline: "#68523d" },
-    RCED: { animal: "hamster", palette: ["#dfeeff", "#b8d7ff", "#fff3d9", "#8ab7ff", "#4d8af4"], accessory: "glasses", expression: "curious", outline: "#4d5c96" },
-    RWFP: { animal: "puppy", palette: ["#f9e7d0", "#f4cc9d", "#fbead8", "#f0b788", "#8e7ce4"], accessory: "scarf", expression: "spark", outline: "#655c54" },
-    RWFD: { animal: "mouse", palette: ["#e9f3ff", "#d2defd", "#fceae8", "#a5c5ff", "#7a91e3"], accessory: "flower", expression: "happy", outline: "#4e5c88" },
-    RWEP: { animal: "fox", palette: ["#ffe7d8", "#ffb58c", "#fff0df", "#ff9b73", "#f87262"], accessory: "badge", expression: "sleepy", outline: "#7c4037" },
-    RWED: { animal: "panda", palette: ["#f4f5fb", "#d9def2", "#f4e7d2", "#a8b4d6", "#4c5b87"], accessory: "ribbon", expression: "curious", outline: "#4a4d62" },
-    SCFP: { animal: "cat", palette: ["#f7dff0", "#ffbfd7", "#fefaf2", "#f5aecc", "#7f7de0"], accessory: "bow", expression: "happy", outline: "#5e5b8d" },
-    SCFD: { animal: "rabbit", palette: ["#e9e7ff", "#c8d0ff", "#fff3d7", "#a8b0ff", "#7f77d4"], accessory: "heart", expression: "spark", outline: "#4d4c7f" },
-    SCEP: { animal: "hamster", palette: ["#fdf2d9", "#f4d4a5", "#fffaf3", "#e8b46b", "#d88255"], accessory: "star", expression: "sleepy", outline: "#6a5848" },
-    SCED: { animal: "mouse", palette: ["#e8f7ff", "#c5efff", "#fff7da", "#9adcf8", "#4ca9d9"], accessory: "badge", expression: "curious", outline: "#4b6f93" },
-    SWFP: { animal: "puppy", palette: ["#f5efe2", "#efddbe", "#fffaf0", "#d9c9a7", "#b88c5e"], accessory: "bell", expression: "spark", outline: "#6d5e52" },
-    SWFD: { animal: "fox", palette: ["#ffe7df", "#ffbf9d", "#fff8e8", "#ff9e86", "#d5644e"], accessory: "ribbon", expression: "happy", outline: "#7b4b45" },
-    SWEP: { animal: "bear", palette: ["#e7f4db", "#bbcfa6", "#fef9ef", "#9ec98c", "#76a965"], accessory: "flower", expression: "sleepy", outline: "#4d6b45" },
-    SWED: { animal: "rabbit", palette: ["#ffe9ec", "#ffc4d7", "#fff7ee", "#ffa8cf", "#d777a6"], accessory: "bow", expression: "curious", outline: "#724d62" }
-  };
-
-  const profile = mascotMap[normalized] || mascotMap.RCFP;
-  const [fur, accent, cheek, ear, line] = profile.palette;
-
-  const accessoryMap = {
-    bow: `<g transform="translate(110 25)"><path d="M-15 8 C-15 -8 -2 -10 0 0 C2 -10 15 -8 15 8 C15 18 6 18 0 12 C-6 18 -15 18 -15 8Z" fill="#f7d9ef" stroke="${line}" stroke-width="3" stroke-linejoin="round"/></g>`,
-    heart: `<g transform="translate(110 28)"><path d="M0 8 C0 -6 16 -12 26 0 C36 -12 52 -6 52 8 C52 24 28 38 26 40 C24 38 0 24 0 8Z" fill="#ffbfd5" stroke="${line}" stroke-width="3" stroke-linejoin="round" transform="scale(0.55) translate(-26 -18)"/></g>`,
-    star: `<g transform="translate(110 24)"><path d="M0 -18 L6 -4 L20 -4 L9 4 L13 18 L0 9 L-13 18 L-9 4 L-20 -4 L-6 -4 Z" fill="#fbe7a1" stroke="${line}" stroke-width="3" stroke-linejoin="round"/></g>`,
-    scarf: `<g transform="translate(104 136)"><path d="M-26 0 L26 0 Q34 10 26 20 L-26 20 Q-34 10 -26 0Z" fill="#ec8bbf" stroke="${line}" stroke-width="3"/><path d="M-8 18 L-2 36 M8 18 L2 36" stroke="${line}" stroke-width="3" stroke-linecap="round"/></g>`,
-    flower: `<g transform="translate(110 24)"><circle cx="0" cy="0" r="7" fill="#f7d9a4" stroke="${line}" stroke-width="3"/><circle cx="0" cy="-18" r="5" fill="#f7d9a4" stroke="${line}" stroke-width="3"/><circle cx="18" cy="0" r="5" fill="#f7d9a4" stroke="${line}" stroke-width="3"/><circle cx="0" cy="18" r="5" fill="#f7d9a4" stroke="${line}" stroke-width="3"/><circle cx="-18" cy="0" r="5" fill="#f7d9a4" stroke="${line}" stroke-width="3"/></g>`,
-    glasses: `<g transform="translate(110 94)"><rect x="-20" y="-8" width="18" height="18" rx="6" fill="rgba(255,255,255,0.8)" stroke="${line}" stroke-width="3"/><rect x="2" y="-8" width="18" height="18" rx="6" fill="rgba(255,255,255,0.8)" stroke="${line}" stroke-width="3"/><path d="M-2 -1 H2" stroke="${line}" stroke-width="3" stroke-linecap="round"/></g>`,
-    badge: `<g transform="translate(110 26)"><circle r="12" fill="#f3f0ff" stroke="${line}" stroke-width="3"/><circle cx="0" cy="0" r="4" fill="#ffc9d8" stroke="${line}" stroke-width="2"/></g>`,
-    bell: `<g transform="translate(110 26)"><path d="M-8 0 Q0 -14 8 0 L8 10 Q8 18 0 18 Q-8 18 -8 10 Z" fill="#f8d77d" stroke="${line}" stroke-width="3"/><circle cx="0" cy="18" r="5" fill="#fef3ba" stroke="${line}" stroke-width="2"/></g>`,
-    ribbon: `<g transform="translate(110 28)"><path d="M0 -10 V18" stroke="${line}" stroke-width="3" stroke-linecap="round"/><path d="M-10 0 Q0 -16 10 0 Q0 12 -10 0Z" fill="#c7ceff" stroke="${line}" stroke-width="3" stroke-linejoin="round"/></g>`
-  };
-
-  const speciesBody = {
-    cat: {
-      body: `<path d="M72 152 C68 128 82 112 109 112 C137 112 150 128 148 152 L146 175 Q110 188 74 175 Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      earLeft: `<path d="M78 60 L66 26 L95 54 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      earRight: `<path d="M142 60 L154 26 L125 54 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      tail: `<path d="M152 140 C182 138 184 170 165 186 C159 170 158 156 152 140Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      paws: `<path d="M90 170 L80 190 M130 170 L140 190" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M74 146 Q110 128 146 146 L141 176 Q110 186 79 176 Z" fill="${accent}" opacity="0.42"/>`
-    },
-    rabbit: {
-      body: `<ellipse cx="110" cy="148" rx="52" ry="43" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<path d="M84 60 L76 20 L108 48 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/><path d="M90 58 L84 34 L100 48 Z" fill="#ffe9f3" opacity="0.8"/>`,
-      earRight: `<path d="M136 60 L144 20 L112 48 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/><path d="M130 58 L136 34 L120 48 Z" fill="#ffe9f3" opacity="0.8"/>`,
-      tail: `<circle cx="164" cy="174" r="10" fill="${fur}" stroke="${line}" stroke-width="3"/>`,
-      paws: `<path d="M92 176 L86 192 M128 176 L134 192" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M82 154 Q110 142 138 154 L136 182 Q110 188 84 182 Z" fill="${accent}" opacity="0.38"/>`
-    },
-    bear: {
-      body: `<ellipse cx="110" cy="150" rx="58" ry="46" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<circle cx="82" cy="64" r="12" fill="${ear}" stroke="${line}" stroke-width="4"/>`,
-      earRight: `<circle cx="138" cy="64" r="12" fill="${ear}" stroke="${line}" stroke-width="4"/>`,
-      tail: `<path d="M154 164 C174 170 182 182 176 196 C164 192 154 178 154 164 Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      paws: `<path d="M88 174 L80 192 M132 174 L140 192" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M76 150 Q110 134 144 150 L140 182 Q110 190 80 182 Z" fill="${accent}" opacity="0.42"/>`
-    },
-    hamster: {
-      body: `<ellipse cx="110" cy="150" rx="58" ry="42" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<path d="M82 64 L76 36 L98 54 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      earRight: `<path d="M138 64 L144 36 L122 54 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      tail: `<path d="M160 160 C182 166 186 184 168 194 C156 188 154 176 160 160 Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      paws: `<path d="M90 176 L82 188 M130 176 L138 188" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M80 156 Q110 136 140 156 L136 182 Q110 190 84 182 Z" fill="${accent}" opacity="0.38"/>`
-    },
-    puppy: {
-      body: `<ellipse cx="110" cy="153" rx="55" ry="44" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<path d="M82 66 L72 42 L98 54 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      earRight: `<path d="M138 66 L148 42 L122 54 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      tail: `<path d="M156 146 C176 144 184 162 176 180 C166 176 158 162 156 146 Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      paws: `<path d="M90 176 L82 192 M130 176 L138 192" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M80 154 Q110 138 140 154 L137 182 Q110 191 83 182 Z" fill="${accent}" opacity="0.38"/>`
-    },
-    mouse: {
-      body: `<ellipse cx="110" cy="152" rx="56" ry="42" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<circle cx="88" cy="64" r="10" fill="${ear}" stroke="${line}" stroke-width="4"/>`,
-      earRight: `<circle cx="132" cy="64" r="10" fill="${ear}" stroke="${line}" stroke-width="4"/>`,
-      tail: `<path d="M152 150 C184 152 196 180 176 194" fill="none" stroke="${fur}" stroke-width="8" stroke-linecap="round"/>`,
-      paws: `<path d="M92 176 L82 192 M128 176 L138 192" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M76 154 Q110 138 144 154 L138 180 Q110 190 82 180 Z" fill="${accent}" opacity="0.38"/>`
-    },
-    fox: {
-      body: `<ellipse cx="110" cy="148" rx="57" ry="44" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<path d="M82 64 L68 22 L98 58 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      earRight: `<path d="M138 64 L152 22 L122 58 Z" fill="${ear}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      tail: `<path d="M152 138 C182 130 188 160 170 184 C160 172 154 158 152 138 Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      paws: `<path d="M90 176 L82 190 M130 176 L138 190" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M80 150 Q110 136 140 150 L138 182 Q110 190 82 182 Z" fill="${accent}" opacity="0.42"/>`
-    },
-    panda: {
-      body: `<ellipse cx="110" cy="152" rx="56" ry="44" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earLeft: `<circle cx="84" cy="62" r="11" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      earRight: `<circle cx="136" cy="62" r="11" fill="${fur}" stroke="${line}" stroke-width="4"/>`,
-      tail: `<path d="M154 144 C178 144 188 168 172 184 C164 178 160 164 154 144 Z" fill="${fur}" stroke="${line}" stroke-width="4" stroke-linejoin="round"/>`,
-      paws: `<path d="M90 176 L80 192 M130 176 L140 192" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-      outfit: `<path d="M76 154 Q110 138 144 154 L138 182 Q110 188 82 182 Z" fill="${accent}" opacity="0.38"/>`
-    }
-  };
-
-  const speciesStyle = speciesBody[profile.animal] || speciesBody.cat;
-  const eyeMap = {
-    spark: `<g><ellipse cx="92" cy="103" rx="8" ry="10" fill="${line}"/><ellipse cx="128" cy="103" rx="8" ry="10" fill="${line}"/><circle cx="89" cy="100" r="2.4" fill="#ffffff"/><circle cx="131" cy="100" r="2.4" fill="#ffffff"/></g>`,
-    happy: `<g><circle cx="92" cy="104" r="8" fill="${line}"/><circle cx="128" cy="104" r="8" fill="${line}"/><circle cx="89" cy="101" r="2.4" fill="#ffffff"/><circle cx="131" cy="101" r="2.4" fill="#ffffff"/></g>`,
-    sleepy: `<g><path d="M84 108 Q92 99 100 108" stroke="${line}" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M120 108 Q128 99 136 108" stroke="${line}" stroke-width="4" fill="none" stroke-linecap="round"/></g>`,
-    curious: `<g><path d="M84 108 Q92 98 100 108" stroke="${line}" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M120 108 Q128 98 136 108" stroke="${line}" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="88" cy="100" r="2.2" fill="#ffffff"/><circle cx="132" cy="100" r="2.2" fill="#ffffff"/></g>`
-  };
-
-  const mouthMap = {
-    spark: `<path d="M100 124 Q110 132 120 124" stroke="#d87a91" stroke-width="4" fill="none" stroke-linecap="round"/>`,
-    happy: `<path d="M98 122 Q110 136 122 122" stroke="#d87a91" stroke-width="4" fill="none" stroke-linecap="round"/>`,
-    sleepy: `<path d="M102 126 H118" stroke="#d87a91" stroke-width="4" stroke-linecap="round"/>`,
-    curious: `<path d="M100 124 Q110 129 120 124" stroke="#d87a91" stroke-width="4" fill="none" stroke-linecap="round"/>`
-  };
-
-  const accessory = accessoryMap[profile.accessory] || accessoryMap.bow;
-  const blush = `<g><circle cx="78" cy="116" r="8" fill="${cheek}" opacity="0.85"/><circle cx="142" cy="116" r="8" fill="${cheek}" opacity="0.85"/></g>`;
-  const sparkles = `<g opacity="0.8"><path d="M42 44 L46 54 L56 58 L46 62 L42 72 L38 62 L28 58 L38 54 Z" fill="#fff7b0"/><path d="M166 32 L169 41 L178 44 L169 47 L166 56 L163 47 L154 44 L163 41 Z" fill="#fff7b0"/><path d="M174 82 L177 90 L185 93 L177 96 L174 104 L171 96 L163 93 L171 90 Z" fill="#ffe3ee"/></g>`;
-
+  const fallbackCode = String(code || "XXXX").toUpperCase();
   return `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="${size}" height="${size}" role="img" aria-label="${normalized} 캐릭터">
-      <defs>
-        <linearGradient id="mascot-bg-${normalized}" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="${fur}"/>
-          <stop offset="1" stop-color="${accent}"/>
-        </linearGradient>
-      </defs>
-      <ellipse cx="110" cy="194" rx="62" ry="16" fill="rgba(112,120,175,0.16)"/>
-      ${sparkles}
-      ${speciesStyle.tail}
-      <g>
-        ${speciesStyle.earLeft}
-        ${speciesStyle.earRight}
-        <circle cx="110" cy="106" r="62" fill="url(#mascot-bg-${normalized})" stroke="${line}" stroke-width="4"/>
-        <path d="M78 110 Q90 88 110 88 Q130 88 142 110" fill="${accent}" opacity="0.58"/>
-        ${speciesStyle.outfit || ""}
-        ${speciesStyle.body}
-        ${blush}
-        ${eyeMap[profile.expression] || eyeMap.spark}
-        <path d="M88 118 Q110 124 132 118" stroke="${line}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
-        ${mouthMap[profile.expression] || mouthMap.happy}
-        ${speciesStyle.paws}
-        ${accessory}
-      </g>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${size}" height="${size}" role="img" aria-label="${fallbackCode} pixel sprite" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+      <rect x="10" y="12" width="12" height="10" fill="#f6d4bf"/>
+      <rect x="9" y="9" width="14" height="6" fill="#79e8d8"/>
+      <rect x="11" y="12" width="2" height="2" fill="#2a2a36"/>
+      <rect x="19" y="12" width="2" height="2" fill="#2a2a36"/>
+      <rect x="10" y="15" width="12" height="2" fill="#5a5bc9"/>
+      <rect x="9" y="18" width="14" height="7" fill="#d8d4ff"/>
     </svg>
   `;
 }
@@ -1071,13 +1002,6 @@ function renderDetailedReport() {
   `;
 }
 
-function prevQuestion() {
-  if (state.index > 0) {
-    state.index -= 1;
-    renderQuestion();
-  }
-}
-
 function generateResultImageBlob() {
   return new Promise(async (resolve, reject) => {
     if (!state.currentResult) {
@@ -1320,9 +1244,15 @@ function resetToIntro() {
 }
 
 function bindEvents() {
-  document.getElementById("start-btn").addEventListener("click", startTest);
-  document.getElementById("prev-btn").addEventListener("click", prevQuestion);
-  document.getElementById("next-btn").addEventListener("click", nextQuestion);
+  const startButton = document.getElementById("start-btn");
+  if (startButton) {
+    startButton.addEventListener("click", startTest);
+  }
+
+  const prevButton = document.getElementById("prev-btn");
+  if (prevButton) {
+    prevButton.addEventListener("click", prevQuestion);
+  }
 
   document.querySelectorAll("[data-share]").forEach((button) => {
     button.addEventListener("click", async () => {

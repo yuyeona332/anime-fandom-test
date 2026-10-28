@@ -127,6 +127,14 @@
               </div>
             </div>
 
+            <div class="info-section">
+              <div class="section-head">
+                <span class="kicker">4가지 성향</span>
+                <h2>각 성향의 양면을 살펴봐요</h2>
+              </div>
+              <div id="axis-guide" class="axis-guide" aria-label="성향 가이드"></div>
+            </div>
+
             <div class="preview-block">
               <div class="section-head">
                 <span class="kicker">16 Types</span>
@@ -148,12 +156,11 @@
               <div id="progress-fill" class="progress-fill"></div>
             </div>
 
-            <h2 id="question-text" class="question-text"></h2>
-            <div id="answer-options" class="answer-options" aria-label="질문 응답 선택"></div>
+            <h2 id="question-text" class="question-text" aria-live="polite"></h2>
+            <div id="answer-options" class="answer-options" aria-label="질문 응답 선택" role="radiogroup"></div>
 
             <div class="nav-row">
               <button id="prev-btn" class="btn secondary" type="button">이전</button>
-              <button id="next-btn" class="btn primary" type="button" disabled>다음 →</button>
             </div>
           </div>
         </section>
@@ -196,6 +203,7 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="./js/data.js"></script>
+    <script src="./js/sprites.js"></script>
     <script src="./js/app.js"></script>
   </body>
 </html>

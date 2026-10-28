@@ -79,9 +79,29 @@ window.ANIME_TEST_DATA = {
     SWED: { tagline: "취향을 넓혀 전하는 느긋한 감상가", description: "다양한 작품을 호기심 있게 접하고, 이를 나누는 경험을 즐겨요." }
   },
 
+  typeDisplayNames: {
+    RCFP: "최애 수집형 몰아보기 장인",
+    RCFD: "최애 전도 정주행 요정",
+    RCEP: "이세계 탐험 정주행러",
+    RCED: "취향 개척 앰배서더",
+    RWFP: "몰입형 명작 감별사",
+    RWFD: "정주행 리뷰 크리에이터",
+    RWEP: "조용한 장르 탐험가",
+    RWED: "장르 횡단 평론가",
+    SCFP: "느긋한 최애 집사",
+    SCFD: "다정한 최애 홍보대사",
+    SCEP: "살금살금 새 캐릭터 헌터",
+    SCED: "취향 나눔 산책가",
+    SWFP: "슬로우 명작 수집가",
+    SWFD: "차분한 감상 공유러",
+    SWEP: "호기심 많은 감상 여행자",
+    SWED: "취향 넓히는 감상 큐레이터",
+    XXXX: "균형 잡힌 감상가"
+  },
+
   fallbackType: {
     adjective: "균형 잡힌",
-    noun: "애니 감상가",
+    noun: "감상가",
     tagline: "좋아하는 만큼, 편하게 덕질하는 감상자",
     description: "다양한 요소를 고르게 즐기며 자신만의 속도로 애니를 사랑하는 유형이에요."
   },
